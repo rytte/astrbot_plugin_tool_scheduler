@@ -1,0 +1,7 @@
+name: astrbot_plugin_tool_scheduler
+display_name: 工具调度器
+desc: 统计模型工具使用情况，管理工具开关与固定策略，支持 Full、Skills-like 混合调度和休眠工具自动发现。
+version: 0.1.1
+author: rytte
+repo: ""
+astrbot_version: ">=4.27,<5"

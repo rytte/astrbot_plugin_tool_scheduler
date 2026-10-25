@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>工具调度器</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">⌘</span><div><span class="eyebrow">TOOL SCHEDULER</span><h1>让工具，恰好在场。</h1><p class="muted">常用工具直接调用，偶尔使用的按需展开，休眠工具随时找回。</p></div></div>
+      <button class="button secondary" id="refresh" type="button">↻ 刷新数据</button>
+    </header>
+    <div id="message" role="status" aria-live="polite" hidden></div>
+    <section class="control-bar" aria-label="全局调度设置">
+      <label class="toggle-label"><input id="smart" type="checkbox" disabled><span><strong>智能调度</strong><small id="smart-caption">自动调整在新会话或 reset 后应用；管理员修改立即生效</small></span></label>
+      <div class="control-divider"></div>
+      <label class="toggle-label"><input id="block-all" type="checkbox" disabled><span><strong>禁止所有模型工具</strong><small>关闭发现入口及所有受管工具，管理页面仍可访问</small></span></label>
+      <span class="connection" id="connection">等待接入</span>
+    </section>
+    <section class="cards" id="cards" aria-label="新会话工具策略概览"></section>
+    <nav class="tabs" aria-label="页面导航"><button type="button" class="tab active" data-panel="tools-panel">工具列表</button><button type="button" class="tab" data-panel="policy-panel">智能策略</button><button type="button" class="tab" data-panel="history-panel">变更记录</button></nav>
+    <section id="tools-panel" class="panel">
+      <div class="toolbar">
+        <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索工具、插件或描述" aria-label="搜索工具"></label>
+        <select id="mode-filter" aria-label="筛选状态"><option value="">全部状态</option><option value="full">Full</option><option value="skills_like">Skills-like</option><option value="dormant">休眠</option><option value="off">已关闭</option><option value="unavailable">宿主不可用</option><option value="mixed">按配置决定</option></select>
+        <select id="profile" aria-label="配置范围"><option value="default">默认配置</option><option value="">所有配置（统计汇总）</option></select>
+        <select id="days" aria-label="统计窗口"><option value="1">最近 1 天</option><option value="7" selected>最近 7 天</option><option value="30">最近 30 天</option></select>
+      </div>
+      <div class="list-heading"><span id="result-count">正在读取工具目录…</span><small>列表显示新会话策略。自动变化待新建 / reset；管理员修改立即生效，策略对所有配置生效。</small></div>
+      <div id="tool-groups"><div class="empty">正在读取工具目录…</div></div>
+      <section class="insights" aria-label="使用统计"><div><span class="eyebrow">RECENT ACTIVITY</span><h2>近期调用</h2><div id="trend" class="trend"></div></div><div><h2>按需加载</h2><dl id="metrics"></dl><p class="muted small">Schema Token 为粗略估算，未扣除额外模型请求成本，不代表实际费用节省。</p></div></section>
+      <p class="coverage muted small" id="coverage"></p>
+    </section>
+    <section id="policy-panel" class="panel" hidden>
+      <div class="section-intro"><span class="eyebrow">ADAPTIVE POLICY</span><h2>升级有依据，降级有缓冲。</h2><p class="muted">频率按独立用户请求计算。同一次任务里的重复调用和重试，不会把低频工具推成高频。</p></div>
+      <form id="policy-form" class="policy-form">
+        <label>统计窗口（天）<input name="window_days" type="number" min="1" max="30" required><small>自动调度依据此窗口内的使用请求数</small></label>
+        <label>Full 升级门槛（请求）<input name="promote_requests" type="number" min="2" max="100000" required><small>达到门槛后，新会话或 reset 时提供完整参数</small></label>
+        <label>Full 降级门槛（请求）<input name="demote_requests" type="number" min="1" max="99999" required><small>必须小于升级门槛</small></label>
+        <label>降级缓冲（小时）<input name="demote_hours" type="number" min="1" max="720" required><small>持续低于降级门槛后才切换到轻量模式</small></label>
+        <label>最短观察期（天）<input name="observe_days" type="number" min="1" max="30" required><small>新工具先保留轻量定义，不直接休眠</small></label>
+        <label>休眠前最少可用请求<input name="min_opportunities" type="number" min="1" max="100000" required><small>只计算该工具原本可用且未被手动关闭的请求</small></label>
+        <label>统计保留时间（天）<input name="retention_days" type="number" min="30" max="365" required><small>不记录参数、聊天正文及工具结果</small></label>
+        <label>每次发现最多加载工具数<input name="discovery_limit" type="number" min="1" max="10" required><small>搜索结果可翻页；只加载定义，不执行工具</small></label>
+        <label class="dormancy-option"><input name="allow_dormancy" type="checkbox"><span>允许自动休眠<small>观察充分且近期无使用的工具，可从发现入口自动找回</small></span></label>
+        <div class="form-footer"><p class="muted small">管理员修改立即重新评估并应用；使用量变化引起的自动调整，等待新会话或 reset。</p><button class="button" type="submit">保存智能策略</button></div>
+      </form>
+    </section>
+    <section id="history-panel" class="panel" hidden><div class="section-intro"><span class="eyebrow">CHANGE HISTORY</span><h2>每一次改变，都有原因。</h2><p class="muted">最近 100 条管理员修改及自动模式变更。</p></div><div id="audit-list" class="audit-list"></div></section>
+    <footer>工具调度器 <span>0.1.1</span><span>默认本地 Agent · 自动策略按会话固定</span></footer>
+  </main>
+  <dialog id="detail-dialog"><div class="dialog-heading"><div><span class="eyebrow" id="detail-owner"></span><h2 id="detail-title"></h2></div><button class="icon-button" type="button" id="close-detail" aria-label="关闭详情">×</button></div><p id="detail-description" class="muted"></p><p class="explanation" id="detail-reason"></p><div id="detail-stats" class="detail-stats"></div><label class="alias-label">搜索别名（逗号分隔）<input id="aliases" type="text" maxlength="1600" placeholder="例如：词云, 聊天可视化"></label><button id="save-aliases" class="button secondary" type="button">保存别名</button><details class="schema-detail"><summary>查看参数 Schema</summary><pre id="detail-schema"></pre></details></dialog>
+</body>
+</html>
